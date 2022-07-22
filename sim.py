@@ -11,7 +11,7 @@ STD_DEV = 5.1 #dB
 def  rssiCalc(distance, useRV):
     if distance >= 1:
         if useRV:
-            return (-10*PATH_LOSS*m.log10(distance) + RSSI_1M + np.random.normal(0,pow(STD_DEV, 2),1))
+            return (-10*PATH_LOSS*m.log10(distance) + RSSI_1M + np.random.normal(0,pow(STD_DEV, 2)))
         else:
             return (-10*PATH_LOSS*m.log10(distance) + RSSI_1M)
     else:
@@ -27,6 +27,7 @@ def meanSquare(f1, f2):
     sum = 0
     for i in range(len(f1)):
         sum += diffSquare(f1[i], f2[i])
+        #sum += abs(f1[i] - f2[i])
     return sum/len(f1)
 
 class Sensor:
@@ -78,11 +79,14 @@ class Building:
         for tile in self.tiles:
             for sensor in self.sensors:
                 tile.addFingerprint(sensor)
+            print(tile.getLoc(),"Fingerprint: ",tile.getFingerprint())
 
     def estimateLoc(self, target):
         targetFingerprint = []
         for sensor in self.sensors:
             targetFingerprint.append(target.rssi(sensor))
+
+        print("\tCalculated target fingerprint: ",targetFingerprint)
 
         closestTile = self.tiles[0]
         leastMeanSquare = meanSquare(closestTile.getFingerprint(), targetFingerprint)
@@ -93,6 +97,7 @@ class Building:
                 leastMeanSquare = ms
                 closestTile = tile
 
+        print("\tClosest tile: ",closestTile.getLoc(),". Tile Fingerprint: ",closestTile.getFingerprint())
         return closestTile.getLoc()
 
 if __name__ == "__main__":
@@ -116,13 +121,20 @@ if __name__ == "__main__":
 
     print("avg rssi: ",sum/10)"""
 
-    for i in range(10):
+    numRuns = 100
+
+    for i in range(numRuns):
+        print("Run ",i)
         loc = building.estimateLoc(target)
-        print(loc)
+        print("")
         x += loc[0]
         y += loc[1]
         z += loc[2]
 
-    approxLoc = [x/10, y/10, z/10]
+    approxLoc = [x/numRuns, y/numRuns, z/numRuns]
 
-    print(approxLoc)
+    error = distanceCalc(approxLoc, target.getLoc())
+
+    print("Estimated location: ",approxLoc)
+    print("Real location: ",target.getLoc())
+    print("Distance to real location: ",error)
